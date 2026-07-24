@@ -1,0 +1,7 @@
+{
+  "download": "100mbit",
+  "latency": "20ms",
+  "name": "WiFi",
+  "packetLoss": 0,
+  "upload": "20mbit"
+}

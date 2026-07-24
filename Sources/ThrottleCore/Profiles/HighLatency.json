@@ -1,0 +1,7 @@
+{
+  "download": "20mbit",
+  "latency": "1000ms",
+  "name": "High Latency",
+  "packetLoss": 0,
+  "upload": "5mbit"
+}

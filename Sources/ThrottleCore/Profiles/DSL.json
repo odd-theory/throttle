@@ -1,0 +1,7 @@
+{
+  "download": "8mbit",
+  "latency": "50ms",
+  "name": "DSL",
+  "packetLoss": 0,
+  "upload": "768kbit"
+}

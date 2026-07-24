@@ -1,0 +1,7 @@
+{
+  "download": "1mbit",
+  "latency": "0ms",
+  "name": "100% Loss",
+  "packetLoss": 100,
+  "upload": "1mbit"
+}
