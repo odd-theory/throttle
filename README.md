@@ -33,12 +33,51 @@ swift build
 swift test
 ```
 
+## Local Testing
+
+Start with commands that do not change network state:
+
+```sh
+swift build
+swift test
+.build/debug/throttle list
+.build/debug/throttle status
+```
+
+Then test real throttling with a mild profile:
+
+```sh
+sudo .build/debug/throttle apply LTE
+.build/debug/throttle status
+```
+
+Use a browser, `curl`, or the app you are testing, then turn throttling off:
+
+```sh
+sudo .build/debug/throttle off
+.build/debug/throttle status
+```
+
+Avoid starting with `Offline` or `100% Loss` until you trust the cleanup path on
+your machine.
+
+To test a custom profile:
+
+```sh
+sudo .build/debug/throttle custom \
+  --download 5mbit \
+  --upload 1mbit \
+  --latency 150ms \
+  --packet-loss 1
+```
+
 ## Install
 
 You can copy the release binary somewhere on your `PATH`:
 
 ```sh
-install .build/release/throttle /usr/local/bin/throttle
+swift build -c release
+sudo install .build/release/throttle /usr/local/bin/throttle
 ```
 
 Commands that apply or remove throttling must be run with `sudo`:
@@ -54,6 +93,82 @@ Read-only commands do not require elevated privileges:
 throttle list
 throttle status
 ```
+
+## Homebrew Packaging
+
+`throttle` should be distributed as a Homebrew formula, not a cask. Casks are
+mainly for `.app`, `.pkg`, fonts, and GUI-style installs. A SwiftPM CLI binary
+belongs in a formula.
+
+Before publishing a formula:
+
+1. Add a project license, such as `MIT` or `Apache-2.0`.
+2. Push this repository to GitHub under Odd Theory.
+3. Tag the first release:
+
+```sh
+git tag v0.1.0
+git push origin dev --tags
+```
+
+4. Create a tap repository:
+
+```text
+odd-theory/homebrew-tap
+```
+
+5. Add a formula at:
+
+```text
+Formula/throttle.rb
+```
+
+Example formula:
+
+```rb
+class Throttle < Formula
+  desc "Native macOS CLI for simulating constrained network conditions"
+  homepage "https://github.com/odd-theory/throttle"
+  url "https://github.com/odd-theory/throttle/archive/refs/tags/v0.1.0.tar.gz"
+  sha256 "<release-tarball-sha256>"
+  license "MIT"
+
+  depends_on xcode: ["15.0", :build]
+
+  def install
+    system "swift", "build", "-c", "release", "--disable-sandbox"
+    bin.install ".build/release/throttle"
+  end
+
+  test do
+    assert_match "LTE", shell_output("#{bin}/throttle list")
+  end
+end
+```
+
+Get the release tarball SHA:
+
+```sh
+curl -L https://github.com/odd-theory/throttle/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
+```
+
+Test the formula locally from the tap repository:
+
+```sh
+brew install --build-from-source ./Formula/throttle.rb
+brew test throttle
+brew uninstall throttle
+```
+
+After the tap is published, users can install with:
+
+```sh
+brew tap odd-theory/tap
+brew install throttle
+```
+
+Future release work should add CI for `swift test` on pull requests and tags,
+then consider Homebrew bottles once the formula is stable.
 
 ## Usage
 
