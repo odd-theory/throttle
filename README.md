@@ -48,14 +48,18 @@ Then test real throttling with a mild profile:
 
 ```sh
 sudo .build/debug/throttle apply LTE
-.build/debug/throttle status
 ```
 
-Use a browser, `curl`, or the app you are testing, then turn throttling off:
+This starts a foreground session that shows the active profile and elapsed time.
+Use a browser, `curl`, or the app you are testing, then press `Ctrl-C` to remove
+the throttling rules and return to your shell.
+
+If you want the old set-and-return behavior, use `--detach`:
 
 ```sh
-sudo .build/debug/throttle off
+sudo .build/debug/throttle apply LTE --detach
 .build/debug/throttle status
+sudo .build/debug/throttle off
 ```
 
 Avoid starting with `Offline` or `100% Loss` until you trust the cleanup path on
@@ -69,6 +73,21 @@ sudo .build/debug/throttle custom \
   --upload 1mbit \
   --latency 150ms \
   --packet-loss 1
+```
+
+To apply a custom profile and then save it from another command, use detached
+mode:
+
+```sh
+sudo .build/debug/throttle custom \
+  --download 5mbit \
+  --upload 1mbit \
+  --latency 150ms \
+  --packet-loss 1 \
+  --detach
+
+.build/debug/throttle save SlowAPI
+sudo .build/debug/throttle off
 ```
 
 You can also run `apply` without a profile to choose interactively:
@@ -93,6 +112,7 @@ Commands that apply or remove throttling must be run with `sudo`:
 
 ```sh
 sudo throttle apply LTE
+sudo throttle apply LTE --detach
 sudo throttle off
 ```
 
@@ -185,6 +205,7 @@ then consider Homebrew bottles once the formula is stable.
 throttle list
 sudo throttle apply LTE
 sudo throttle apply
+sudo throttle apply LTE --detach
 sudo throttle custom --download 5mbit --upload 1mbit --latency 150ms --packet-loss 1
 throttle status
 throttle save SlowAPI
@@ -205,11 +226,15 @@ Saved profiles are loaded from:
 
 ### `sudo throttle apply <profile>`
 
-Applies a built-in or saved profile.
+Applies a built-in or saved profile and starts a foreground session.
 
 ```sh
 sudo throttle apply "Very Bad Network"
 ```
+
+The foreground session keeps running until you press `Ctrl-C`. On exit,
+`throttle` removes its PF anchor and dummynet pipes, then marks the status
+inactive.
 
 Profile lookup is case-insensitive, ignores spacing/punctuation, and accepts
 unique partial names. These resolve to the same profile:
@@ -223,6 +248,12 @@ sudo throttle apply lossy
 If a partial name matches multiple profiles, `throttle` reports the ambiguous
 matches instead of guessing.
 
+Use `--detach` when you want to apply the profile and return to the shell:
+
+```sh
+sudo throttle apply LTE --detach
+```
+
 ### `sudo throttle apply`
 
 Opens an interactive profile selector and applies the chosen profile directly.
@@ -232,7 +263,7 @@ pre-select it before pressing Enter.
 
 ### `sudo throttle custom`
 
-Applies an ad hoc custom profile.
+Applies an ad hoc custom profile and starts a foreground session.
 
 ```sh
 sudo throttle custom \
@@ -256,6 +287,17 @@ Supported bandwidth units:
 Latency is specified in milliseconds, for example `150ms`.
 
 Packet loss is a percentage from `0` through `100`.
+
+Use `--detach` to apply a custom profile and return to the shell:
+
+```sh
+sudo throttle custom \
+  --download 5mbit \
+  --upload 1mbit \
+  --latency 150ms \
+  --packet-loss 1 \
+  --detach
+```
 
 ### `throttle status`
 

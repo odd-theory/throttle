@@ -8,6 +8,7 @@ public final class ThrottleService {
     private let formatter: OutputFormatter
     private let executableName: String
     private let profileSelector: ProfileSelecting
+    private let foregroundSession: ForegroundSessionRunning
 
     public init(
         profiles: ProfileRepository,
@@ -16,7 +17,8 @@ public final class ThrottleService {
         privileges: PrivilegeChecking,
         formatter: OutputFormatter = OutputFormatter(),
         executableName: String = "throttle",
-        profileSelector: ProfileSelecting = ConsoleProfileSelector()
+        profileSelector: ProfileSelecting = ConsoleProfileSelector(),
+        foregroundSession: ForegroundSessionRunning = ConsoleForegroundSession()
     ) {
         self.profiles = profiles
         self.stateStore = stateStore
@@ -25,6 +27,7 @@ public final class ThrottleService {
         self.formatter = formatter
         self.executableName = executableName
         self.profileSelector = profileSelector
+        self.foregroundSession = foregroundSession
     }
 
     public static func live(executableName: String = "throttle") throws -> ThrottleService {
@@ -41,10 +44,10 @@ public final class ThrottleService {
         switch command {
         case .list:
             return formatter.list(try profiles.allProfiles())
-        case .apply(let name):
-            return try applyProfile(named: name)
-        case .custom(let profile):
-            return try apply(profile: profile, source: .custom)
+        case .apply(let name, let mode):
+            return try applyProfile(named: name, mode: mode)
+        case .custom(let profile, let mode):
+            return try apply(profile: profile, source: .custom, mode: mode)
         case .off:
             return try off()
         case .status:
@@ -59,7 +62,7 @@ public final class ThrottleService {
         }
     }
 
-    private func applyProfile(named name: String?) throws -> String {
+    private func applyProfile(named name: String?, mode: ApplyMode) throws -> String {
         let record: ProfileRecord
         if let name {
             guard let foundRecord = try profiles.findProfile(named: name) else {
@@ -76,10 +79,10 @@ public final class ThrottleService {
         }
 
         let source: ThrottleStatus.Source = record.source == .saved ? .saved : .bundled
-        return try apply(profile: record.profile, source: source)
+        return try apply(profile: record.profile, source: source, mode: mode)
     }
 
-    private func apply(profile: NetworkProfile, source: ThrottleStatus.Source) throws -> String {
+    private func apply(profile: NetworkProfile, source: ThrottleStatus.Source, mode: ApplyMode) throws -> String {
         try requireRoot(command: source == .custom ? "custom" : "apply \(profile.name)")
         let previousStatus = try stateStore.load()
         if previousStatus.isActive {
@@ -93,7 +96,15 @@ public final class ThrottleService {
             appliedAt: Date(),
             pfToken: token
         ))
-        return formatter.applied(profile)
+
+        if mode == .detached {
+            return formatter.applied(profile)
+        }
+
+        return try foregroundSession.run(profile: profile, startedAt: Date()) { [networkController, stateStore] in
+            try networkController.removeAll(pfToken: token)
+            try stateStore.save(.inactive)
+        }
     }
 
     private func off() throws -> String {
