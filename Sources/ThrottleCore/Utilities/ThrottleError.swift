@@ -6,8 +6,9 @@ public enum ThrottleError: Error, CustomStringConvertible, Equatable {
     case invalidArgument(String)
     case invalidUnit(String)
     case invalidProfile(String)
+    case ambiguousProfile(name: String, matches: [String])
     case malformedProfile(path: String, reason: String)
-    case missingPrivileges(command: String)
+    case missingPrivileges(command: String, executable: String)
     case commandFailed(command: String, status: Int32, output: String)
     case applyFailed(String)
     case noActiveCustomProfile
@@ -23,10 +24,12 @@ public enum ThrottleError: Error, CustomStringConvertible, Equatable {
             return "Invalid unit: \(value)"
         case .invalidProfile(let name):
             return "Unknown profile: \(name)"
+        case .ambiguousProfile(let name, let matches):
+            return "Ambiguous profile: \(name). Matches: \(matches.joined(separator: ", "))"
         case .malformedProfile(let path, let reason):
             return "Malformed profile JSON at \(path): \(reason)"
-        case .missingPrivileges(let command):
-            return "Missing privileges. Run `sudo throttle \(command)` to change network rules."
+        case .missingPrivileges(let command, let executable):
+            return "Missing privileges. Run `sudo \(executable) \(command)` to change network rules."
         case .commandFailed(let command, let status, let output):
             let trimmedOutput = output.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmedOutput.isEmpty {

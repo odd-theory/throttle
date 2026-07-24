@@ -5,6 +5,14 @@ import Testing
     #expect(try CommandParser().parse(["apply", "LTE"]) == .apply("LTE"))
 }
 
+@Test func parsesApplyWithoutProfileForInteractiveSelection() throws {
+    #expect(try CommandParser().parse(["apply"]) == .apply(nil))
+}
+
+@Test func joinsUnquotedMultiWordProfileNames() throws {
+    #expect(try CommandParser().parse(["apply", "Lossy", "Network"]) == .apply("Lossy Network"))
+}
+
 @Test func parsesCustomCommand() throws {
     let command = try CommandParser().parse([
         "custom",

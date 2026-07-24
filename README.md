@@ -71,6 +71,15 @@ sudo .build/debug/throttle custom \
   --packet-loss 1
 ```
 
+You can also run `apply` without a profile to choose interactively:
+
+```sh
+sudo .build/debug/throttle apply
+```
+
+The selector supports Up/Down, Enter, and number keys. Typing a number
+pre-selects that profile, then Enter applies it.
+
 ## Install
 
 You can copy the release binary somewhere on your `PATH`:
@@ -175,6 +184,7 @@ then consider Homebrew bottles once the formula is stable.
 ```sh
 throttle list
 sudo throttle apply LTE
+sudo throttle apply
 sudo throttle custom --download 5mbit --upload 1mbit --latency 150ms --packet-loss 1
 throttle status
 throttle save SlowAPI
@@ -201,9 +211,24 @@ Applies a built-in or saved profile.
 sudo throttle apply "Very Bad Network"
 ```
 
-Profile lookup is case-insensitive and ignores spacing/punctuation, so
-`verybadnetwork`, `Very Bad Network`, and `very-bad-network` resolve the same
-way.
+Profile lookup is case-insensitive, ignores spacing/punctuation, and accepts
+unique partial names. These resolve to the same profile:
+
+```sh
+sudo throttle apply "Lossy Network"
+sudo throttle apply Lossy Network
+sudo throttle apply lossy
+```
+
+If a partial name matches multiple profiles, `throttle` reports the ambiguous
+matches instead of guessing.
+
+### `sudo throttle apply`
+
+Opens an interactive profile selector and applies the chosen profile directly.
+
+Use Up/Down to move, Enter to apply, `q` to cancel, or type a profile number to
+pre-select it before pressing Enter.
 
 ### `sudo throttle custom`
 

@@ -58,7 +58,7 @@ public final class ProfileRepository {
     }
 
     public func findProfile(named name: String) throws -> ProfileRecord? {
-        try allProfiles().first { $0.profile.normalizedName == name.normalizedProfileName }
+        try ConsoleProfileSelector.matchProfile(named: name, in: allProfiles())
     }
 
     public func save(profile: NetworkProfile, as name: String) throws -> ProfileRecord {

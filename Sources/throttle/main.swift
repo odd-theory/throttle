@@ -3,7 +3,7 @@ import ThrottleCore
 
 do {
     let command = try CommandParser().parse(Array(CommandLine.arguments.dropFirst()))
-    let service = try ThrottleService.live()
+    let service = try ThrottleService.live(executableName: CommandLine.arguments.first ?? "throttle")
     let output = try service.run(command)
     print(output)
 } catch let error as ThrottleError {

@@ -40,7 +40,8 @@ public final class DummynetNetworkController: NetworkControlling {
 
     public func removeAll(pfToken: String?) throws {
         try run("/sbin/pfctl", ["-a", Self.anchorName, "-F", "all"])
-        try run("/usr/sbin/dnctl", ["pipe", "delete", "\(Self.downloadPipe)", "\(Self.uploadPipe)"])
+        try deletePipeIfPresent(Self.downloadPipe)
+        try deletePipeIfPresent(Self.uploadPipe)
         if let pfToken, !pfToken.isEmpty {
             try run("/sbin/pfctl", ["-X", pfToken])
         }
@@ -112,6 +113,24 @@ public final class DummynetNetworkController: NetworkControlling {
             )
         }
         return result
+    }
+
+    private func deletePipeIfPresent(_ pipe: Int) throws {
+        let arguments = ["pipe", "delete", "\(pipe)"]
+        let result = try runner.run("/usr/sbin/dnctl", arguments)
+        if result.succeeded || Self.isMissingPipeDeleteFailure(result.output) {
+            return
+        }
+
+        throw ThrottleError.commandFailed(
+            command: result.command,
+            status: result.status,
+            output: result.output
+        )
+    }
+
+    static func isMissingPipeDeleteFailure(_ output: String) -> Bool {
+        output.contains("IP_DUMMYNET_DEL") && output.contains("Invalid argument")
     }
 
     static func extractToken(from output: String) -> String? {

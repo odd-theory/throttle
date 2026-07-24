@@ -25,6 +25,20 @@ import Testing
     #expect(record.profile.download.bitsPerSecond == 5_000_000)
 }
 
+@Test func partialProfileLookupMatchesSingleProfile() throws {
+    let repository = try ProfileRepository.live()
+    let record = try #require(try repository.findProfile(named: "lossy"))
+    #expect(record.profile.name == "Lossy Network")
+}
+
+@Test func ambiguousPartialProfileLookupReportsMatches() throws {
+    let repository = try ProfileRepository.live()
+
+    #expect(throws: ThrottleError.self) {
+        _ = try repository.findProfile(named: "network")
+    }
+}
+
 @Test func bundledProfilesLoad() throws {
     let repository = try ProfileRepository.live()
     let names = try repository.allProfiles().map(\.profile.name)

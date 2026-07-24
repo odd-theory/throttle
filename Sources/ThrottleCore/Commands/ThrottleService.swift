@@ -6,27 +6,34 @@ public final class ThrottleService {
     private let networkController: NetworkControlling
     private let privileges: PrivilegeChecking
     private let formatter: OutputFormatter
+    private let executableName: String
+    private let profileSelector: ProfileSelecting
 
     public init(
         profiles: ProfileRepository,
         stateStore: StateStore,
         networkController: NetworkControlling,
         privileges: PrivilegeChecking,
-        formatter: OutputFormatter = OutputFormatter()
+        formatter: OutputFormatter = OutputFormatter(),
+        executableName: String = "throttle",
+        profileSelector: ProfileSelecting = ConsoleProfileSelector()
     ) {
         self.profiles = profiles
         self.stateStore = stateStore
         self.networkController = networkController
         self.privileges = privileges
         self.formatter = formatter
+        self.executableName = executableName
+        self.profileSelector = profileSelector
     }
 
-    public static func live() throws -> ThrottleService {
+    public static func live(executableName: String = "throttle") throws -> ThrottleService {
         try ThrottleService(
             profiles: .live(),
             stateStore: .live(),
             networkController: DummynetNetworkController(),
-            privileges: RootPrivilegeChecker()
+            privileges: RootPrivilegeChecker(),
+            executableName: executableName
         )
     }
 
@@ -52,10 +59,22 @@ public final class ThrottleService {
         }
     }
 
-    private func applyProfile(named name: String) throws -> String {
-        guard let record = try profiles.findProfile(named: name) else {
-            throw ThrottleError.invalidProfile(name)
+    private func applyProfile(named name: String?) throws -> String {
+        let record: ProfileRecord
+        if let name {
+            guard let foundRecord = try profiles.findProfile(named: name) else {
+                throw ThrottleError.invalidProfile(name)
+            }
+            record = foundRecord
+        } else {
+            try requireRoot(command: "apply")
+            let records = try profiles.allProfiles()
+            guard let selectedRecord = try profileSelector.selectProfile(from: records) else {
+                throw ThrottleError.invalidCommand("No profile selected.")
+            }
+            record = selectedRecord
         }
+
         let source: ThrottleStatus.Source = record.source == .saved ? .saved : .bundled
         return try apply(profile: record.profile, source: source)
     }
@@ -98,7 +117,7 @@ public final class ThrottleService {
 
     private func requireRoot(command: String) throws {
         guard privileges.isRoot else {
-            throw ThrottleError.missingPrivileges(command: command)
+            throw ThrottleError.missingPrivileges(command: command, executable: executableName)
         }
     }
 }

@@ -2,7 +2,7 @@ import Foundation
 
 public enum CLICommand: Equatable {
     case list
-    case apply(String)
+    case apply(String?)
     case off
     case status
     case custom(NetworkProfile)
@@ -25,10 +25,7 @@ public struct CommandParser {
             try expectNoArguments(rest, command: "list")
             return .list
         case "apply":
-            guard rest.count == 1, let profileName = rest.first else {
-                throw ThrottleError.invalidCommand("Usage: throttle apply <profile>")
-            }
-            return .apply(profileName)
+            return .apply(joinedValue(rest))
         case "off":
             try expectNoArguments(rest, command: "off")
             return .off
@@ -38,12 +35,12 @@ public struct CommandParser {
         case "custom":
             return try .custom(parseCustom(rest))
         case "save":
-            guard rest.count == 1, let profileName = rest.first else {
+            guard let profileName = joinedValue(rest) else {
                 throw ThrottleError.invalidCommand("Usage: throttle save <name>")
             }
             return .save(profileName)
         case "delete":
-            guard rest.count == 1, let profileName = rest.first else {
+            guard let profileName = joinedValue(rest) else {
                 throw ThrottleError.invalidCommand("Usage: throttle delete <name>")
             }
             return .delete(profileName)
@@ -58,6 +55,12 @@ public struct CommandParser {
         guard arguments.isEmpty else {
             throw ThrottleError.invalidCommand("Usage: throttle \(command)")
         }
+    }
+
+    private func joinedValue(_ arguments: [String]) -> String? {
+        let value = arguments.joined(separator: " ")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return value.isEmpty ? nil : value
     }
 
     private func parseCustom(_ arguments: [String]) throws -> NetworkProfile {
