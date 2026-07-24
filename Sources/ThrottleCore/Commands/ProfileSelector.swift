@@ -88,8 +88,10 @@ public struct ConsoleProfileSelector: ProfileSelecting {
         var numericBuffer = ""
 
         func render() {
+            let lineEnding = "\r\n"
+
             if renderedLineCount > 0 {
-                writeOutput("\u{001B}[\(renderedLineCount)A")
+                writeOutput("\r\u{001B}[\(renderedLineCount)A")
                 writeOutput("\u{001B}[J")
             }
 
@@ -109,7 +111,7 @@ public struct ConsoleProfileSelector: ProfileSelecting {
                 lines.append("Selected number: \(numericBuffer)")
             }
 
-            let output = lines.joined(separator: "\n") + "\n"
+            let output = lines.joined(separator: lineEnding) + lineEnding
             renderedLineCount = lines.count
             writeOutput(output)
         }
@@ -138,10 +140,10 @@ public struct ConsoleProfileSelector: ProfileSelecting {
                 }
                 render()
             case .enter:
-                writeOutput("\n")
+                writeOutput("\r\n")
                 return records[selectedIndex]
             case .quit, .escape:
-                writeOutput("\n")
+                writeOutput("\r\n")
                 return nil
             case .other:
                 break

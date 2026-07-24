@@ -4,13 +4,15 @@ import Testing
 
 @Test func interactiveProfileSelectionUsesArrowKeysAndEnter() throws {
     var keys: [ProfileSelectionKey] = [.down, .down, .up, .enter]
+    var output = ""
     let selected = try ConsoleProfileSelector.selectInteractively(
         from: profileRecords(["EDGE", "LTE", "WiFi"]),
         readKey: { keys.removeFirst() },
-        writeOutput: { _ in }
+        writeOutput: { output.append($0) }
     )
 
     #expect(selected?.profile.name == "LTE")
+    #expect(output.contains("\r\n"))
 }
 
 @Test func interactiveProfileSelectionUsesNumberKeysToPreselect() throws {

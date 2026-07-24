@@ -51,6 +51,7 @@ public final class DummynetNetworkController: NetworkControlling {
         """
         dummynet in quick all pipe \(Self.downloadPipe)
         dummynet out quick all pipe \(Self.uploadPipe)
+
         """
     }
 

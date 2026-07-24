@@ -59,6 +59,14 @@ private final class RecordingRunner: ShellRunning {
     ])
 }
 
+@Test func generatedPfRulesEndWithTrailingNewline() {
+    let rules = DummynetNetworkController().generatedRules()
+
+    #expect(rules.hasSuffix("\n"))
+    #expect(rules.contains("dummynet in quick all pipe 12001\n"))
+    #expect(rules.contains("dummynet out quick all pipe 12002\n"))
+}
+
 @Test func extractsPfEnableToken() {
     #expect(DummynetNetworkController.extractToken(from: "Token : 12345\n") == "12345")
 }
