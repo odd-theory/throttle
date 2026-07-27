@@ -7,6 +7,13 @@ public protocol ForegroundSessionRunning {
 }
 
 public final class ConsoleForegroundSession: ForegroundSessionRunning {
+    private static let enterAlternateScreen = "\u{001B}[?1049h"
+    private static let leaveAlternateScreen = "\u{001B}[?1049l"
+    private static let hideCursor = "\u{001B}[?25l"
+    private static let showCursor = "\u{001B}[?25h"
+    private static let cursorHome = "\u{001B}[H"
+    private static let clearToEndOfScreen = "\u{001B}[J"
+
     private let writeOutput: (String) -> Void
     private let now: () -> Date
 
@@ -39,10 +46,12 @@ public final class ConsoleForegroundSession: ForegroundSessionRunning {
         interruptSource.resume()
         terminateSource.resume()
 
+        writeOutput(Self.beginScreen())
+
         let timer = DispatchSource.makeTimerSource(queue: queue)
         timer.schedule(deadline: .now(), repeating: .seconds(1))
         timer.setEventHandler { [writeOutput, now] in
-            writeOutput(Self.render(profile: profile, startedAt: startedAt, now: now()))
+            writeOutput(Self.renderFrame(profile: profile, startedAt: startedAt, now: now()))
         }
         timer.resume()
 
@@ -52,15 +61,36 @@ public final class ConsoleForegroundSession: ForegroundSessionRunning {
         interruptSource.cancel()
         terminateSource.cancel()
 
-        writeOutput("\u{001B}[2J\u{001B}[HStopping throttle...\n")
+        writeOutput(Self.renderStopping())
         try stop()
+        writeOutput(Self.endScreen())
         return "Throttling disabled."
     }
 
     public static func render(profile: NetworkProfile, startedAt: Date, now: Date) -> String {
+        renderBody(profile: profile, startedAt: startedAt, now: now)
+    }
+
+    public static func renderFrame(profile: NetworkProfile, startedAt: Date, now: Date) -> String {
+        cursorHome + renderBody(profile: profile, startedAt: startedAt, now: now) + "\n" + clearToEndOfScreen
+    }
+
+    public static func beginScreen() -> String {
+        enterAlternateScreen + hideCursor
+    }
+
+    public static func endScreen() -> String {
+        showCursor + leaveAlternateScreen
+    }
+
+    public static func renderStopping() -> String {
+        cursorHome + "Stopping throttle...\n" + clearToEndOfScreen
+    }
+
+    private static func renderBody(profile: NetworkProfile, startedAt: Date, now: Date) -> String {
         let elapsed = max(0, Int(now.timeIntervalSince(startedAt)))
         return """
-        \u{001B}[2J\u{001B}[Hthrottle
+        throttle
         Status: active
         Profile: \(profile.name)
         Elapsed: \(formatElapsed(seconds: elapsed))
