@@ -21,7 +21,7 @@ private final class RecordingRunner: ShellRunning {
 
 @Test func appliesDummynetPipesAndPfAnchor() throws {
     let runner = RecordingRunner()
-    runner.outputs = ["", "", "", "", "", "", "Token : 12345\n"]
+    runner.outputs = ["", "", "", "", "", "", "", "", "Token : 12345\n"]
     let controller = DummynetNetworkController(runner: runner)
     let profile = NetworkProfile(
         name: "Test",
@@ -42,8 +42,10 @@ private final class RecordingRunner: ShellRunning {
 
 @Test func removeAllIgnoresMissingThrottlePipes() throws {
     let runner = RecordingRunner()
-    runner.statuses = [0, 1, 1]
+    runner.statuses = [0, 0, 0, 1, 1]
     runner.outputs = [
+        "",
+        "",
         "",
         "dnctl: rule 12001: setsockopt(IP_DUMMYNET_DEL): Invalid argument\n",
         "dnctl: rule 12002: setsockopt(IP_DUMMYNET_DEL): Invalid argument\n"
@@ -53,6 +55,8 @@ private final class RecordingRunner: ShellRunning {
     try controller.removeAll(pfToken: nil)
 
     #expect(runner.commands == [
+        "/usr/sbin/dnctl pipe 12001 config bw 0bit/s delay 0ms plr 0",
+        "/usr/sbin/dnctl pipe 12002 config bw 0bit/s delay 0ms plr 0",
         "/sbin/pfctl -a com.apple/throttle -F all",
         "/usr/sbin/dnctl pipe delete 12001",
         "/usr/sbin/dnctl pipe delete 12002"
@@ -63,8 +67,8 @@ private final class RecordingRunner: ShellRunning {
     let rules = DummynetNetworkController().generatedRules()
 
     #expect(rules.hasSuffix("\n"))
-    #expect(rules.contains("dummynet in quick all pipe 12001\n"))
-    #expect(rules.contains("dummynet out quick all pipe 12002\n"))
+    #expect(rules.contains("dummynet in quick all no state pipe 12001\n"))
+    #expect(rules.contains("dummynet out quick all no state pipe 12002\n"))
 }
 
 @Test func extractsPfEnableToken() {

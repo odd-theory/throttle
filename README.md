@@ -396,8 +396,8 @@ the host network.
 The tool loads these rules into the stock macOS dummynet anchor point:
 
 ```pf
-dummynet in quick all pipe 12001
-dummynet out quick all pipe 12002
+dummynet in quick all no state pipe 12001
+dummynet out quick all no state pipe 12002
 ```
 
 The anchor name is:
@@ -410,6 +410,14 @@ This avoids rewriting `/etc/pf.conf` or flushing the system-wide PF ruleset.
 When applying a profile, `throttle` configures the two pipes using `dnctl pipe
 config` with bandwidth, delay, and packet-loss rate.
 
+The rules use `no state` so existing PF states do not keep dummynet behavior
+after the rules are removed.
+
+When disabling throttling, `throttle` first resets both throttle pipes to
+pass-through behavior (`bw 0`, `delay 0ms`, `plr 0`), then flushes the throttle
+PF anchor and deletes the pipes. Resetting before deletion prevents queued or
+state-associated traffic from continuing to feel throttled after `off`.
+
 If applying rules fails midway, the tool attempts to clean up the throttle
 anchor and pipes before reporting the error.
 
@@ -419,3 +427,5 @@ anchor and pipes before reporting the error.
 - Loopback traffic is not specially excluded by the current rules.
 - VPNs, security tools, or custom PF configurations may affect behavior.
 - Automated tests do not run privileged network mutations.
+- If connectivity still feels throttled after `off`, run `sudo throttle off`
+  again. It is idempotent and repeats the pass-through reset plus cleanup.

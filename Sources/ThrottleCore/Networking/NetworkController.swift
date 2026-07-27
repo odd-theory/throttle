@@ -39,6 +39,8 @@ public final class DummynetNetworkController: NetworkControlling {
     }
 
     public func removeAll(pfToken: String?) throws {
+        try resetPipe(Self.downloadPipe)
+        try resetPipe(Self.uploadPipe)
         try run("/sbin/pfctl", ["-a", Self.anchorName, "-F", "all"])
         try deletePipeIfPresent(Self.downloadPipe)
         try deletePipeIfPresent(Self.uploadPipe)
@@ -49,8 +51,8 @@ public final class DummynetNetworkController: NetworkControlling {
 
     public func generatedRules() -> String {
         """
-        dummynet in quick all pipe \(Self.downloadPipe)
-        dummynet out quick all pipe \(Self.uploadPipe)
+        dummynet in quick all no state pipe \(Self.downloadPipe)
+        dummynet out quick all no state pipe \(Self.uploadPipe)
 
         """
     }
@@ -128,6 +130,20 @@ public final class DummynetNetworkController: NetworkControlling {
             status: result.status,
             output: result.output
         )
+    }
+
+    private func resetPipe(_ pipe: Int) throws {
+        try run("/usr/sbin/dnctl", [
+            "pipe",
+            "\(pipe)",
+            "config",
+            "bw",
+            "0bit/s",
+            "delay",
+            "0ms",
+            "plr",
+            "0"
+        ])
     }
 
     static func isMissingPipeDeleteFailure(_ output: String) -> Bool {
