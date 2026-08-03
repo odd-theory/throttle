@@ -1,0 +1,24 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:throttle}",
+            "name": "Debug throttle",
+            "target": "throttle",
+            "configuration": "debug",
+            "preLaunchTask": "swift: Build Debug throttle"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:throttle}",
+            "name": "Release throttle",
+            "target": "throttle",
+            "configuration": "release",
+            "preLaunchTask": "swift: Build Release throttle"
+        }
+    ]
+}
