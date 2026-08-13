@@ -1,0 +1,121 @@
+name: Publish Homebrew formula
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Test, tag, and publish formula
+    runs-on: macos-latest
+
+    steps:
+      - name: Check out throttle
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show Swift version
+        run: swift --version
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test
+
+      - name: Resolve release version
+        id: version
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          if [ -z "$VERSION" ]; then
+            echo "VERSION file is empty" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create release tag if needed
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          git fetch --tags origin
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            TAG_SHA="$(git rev-list -n 1 "$TAG")"
+            if [ "$TAG_SHA" != "$GITHUB_SHA" ]; then
+              echo "Tag $TAG already exists at $TAG_SHA, not current commit $GITHUB_SHA." >&2
+              echo "Update VERSION before publishing another release." >&2
+              exit 1
+            fi
+            echo "Tag $TAG already exists at current commit."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: Compute source tarball SHA256
+        id: source
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          URL="https://github.com/odd-theory/throttle/archive/refs/tags/$TAG.tar.gz"
+          curl -L "$URL" -o throttle.tar.gz
+          SHA256="$(shasum -a 256 throttle.tar.gz | awk '{print $1}')"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Homebrew formula
+        env:
+          SOURCE_URL: ${{ steps.source.outputs.url }}
+          SOURCE_SHA256: ${{ steps.source.outputs.sha256 }}
+        run: |
+          mkdir -p generated/Formula
+          cat > generated/Formula/throttle.rb <<RUBY
+          class Throttle < Formula
+            desc "Native macOS CLI for simulating constrained network conditions"
+            homepage "https://github.com/odd-theory/throttle"
+            url "$SOURCE_URL"
+            sha256 "$SOURCE_SHA256"
+            license "MIT"
+
+            depends_on xcode: ["16.0", :build]
+
+            def install
+              system "swift", "build", "-c", "release", "--disable-sandbox"
+              bin.install ".build/release/throttle"
+            end
+
+            test do
+              assert_match "WiFi", shell_output("#{bin}/throttle list")
+            end
+          end
+          RUBY
+
+      - name: Check out Odd Theory Homebrew tap
+        uses: actions/checkout@v4
+        with:
+          repository: odd-theory/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          path: homebrew-tap
+
+      - name: Publish formula to tap
+        run: |
+          mkdir -p homebrew-tap/Formula
+          cp generated/Formula/throttle.rb homebrew-tap/Formula/throttle.rb
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Formula/throttle.rb
+          if git diff --cached --quiet; then
+            echo "Formula is already up to date."
+          else
+            git commit -m "Update throttle formula to ${{ steps.version.outputs.tag }}"
+            git push
+          fi
