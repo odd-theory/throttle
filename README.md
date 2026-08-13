@@ -246,6 +246,8 @@ sudo throttle off
 ### `throttle list`
 
 Lists every discovered profile. Built-in profiles are bundled with the binary.
+Profiles are ordered from best connection to worst connection using bandwidth,
+latency, and packet-loss values.
 Saved profiles are loaded from:
 
 ```text

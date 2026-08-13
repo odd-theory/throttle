@@ -52,8 +52,11 @@ public final class ProfileRepository {
         for record in try loadProfiles(from: savedDirectory, source: .saved) {
             recordsByName[record.profile.normalizedName] = record
         }
-        return recordsByName.values.sorted {
-            $0.profile.name.localizedCaseInsensitiveCompare($1.profile.name) == .orderedAscending
+        return recordsByName.values.sorted { lhs, rhs in
+            if lhs.profile.qualityScore == rhs.profile.qualityScore {
+                return lhs.profile.name.localizedCaseInsensitiveCompare(rhs.profile.name) == .orderedAscending
+            }
+            return lhs.profile.qualityScore > rhs.profile.qualityScore
         }
     }
 
