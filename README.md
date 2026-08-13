@@ -157,40 +157,58 @@ throttle status
 mainly for `.app`, `.pkg`, fonts, and GUI-style installs. A SwiftPM CLI binary
 belongs in a formula.
 
-Before publishing a formula:
+This repository includes a release workflow that publishes the Homebrew formula
+when changes land on `main`.
 
-1. Add a project license, such as `MIT` or `Apache-2.0`.
-2. Push this repository to GitHub under Odd Theory.
-3. Tag the first release:
+Expected branch flow:
 
-```sh
-git tag v0.1.0
-git push origin dev --tags
-```
+1. Create feature branches from `dev`.
+2. Open feature PRs back into `dev`.
+3. When `dev` is ready for release, open a PR from `dev` to `main`.
+4. Merge that PR to `main`.
+5. The `Publish Homebrew formula` workflow builds, tests, creates the release
+   tag from `VERSION`, computes the source tarball checksum, and publishes the
+   formula to the Odd Theory tap.
 
-4. Create a tap repository:
+The tap repository must exist before merging to `main`:
 
 ```text
 odd-theory/homebrew-tap
 ```
 
-5. Add a formula at:
+The `odd-theory/throttle` repository also needs a GitHub Actions secret named:
 
 ```text
-Formula/throttle.rb
+HOMEBREW_TAP_TOKEN
 ```
 
-Example formula:
+That token must be able to write to `odd-theory/homebrew-tap`.
+
+The generated formula is based on:
+
+```text
+packaging/homebrew/Formula/throttle.rb.template
+```
+
+After the workflow publishes the formula, users can install with:
+
+```sh
+brew tap odd-theory/tap
+brew install throttle
+```
+
+The published formula will look like this after the workflow substitutes the
+release tag and source checksum:
 
 ```rb
 class Throttle < Formula
   desc "Native macOS CLI for simulating constrained network conditions"
   homepage "https://github.com/odd-theory/throttle"
-  url "https://github.com/odd-theory/throttle/archive/refs/tags/v0.1.0.tar.gz"
-  sha256 "<release-tarball-sha256>"
+  url "https://github.com/odd-theory/throttle/archive/refs/tags/VERSION_TAG.tar.gz"
+  sha256 "SOURCE_TARBALL_SHA256"
   license "MIT"
 
-  depends_on xcode: ["15.0", :build]
+  depends_on xcode: ["16.0", :build]
 
   def install
     system "swift", "build", "-c", "release", "--disable-sandbox"
@@ -198,18 +216,12 @@ class Throttle < Formula
   end
 
   test do
-    assert_match "LTE", shell_output("#{bin}/throttle list")
+    assert_match "WiFi", shell_output("#{bin}/throttle list")
   end
 end
 ```
 
-Get the release tarball SHA:
-
-```sh
-curl -L https://github.com/odd-theory/throttle/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
-```
-
-Test the formula locally from the tap repository:
+To test a generated formula locally from the tap repository:
 
 ```sh
 brew install --build-from-source ./Formula/throttle.rb
@@ -217,15 +229,19 @@ brew test throttle
 brew uninstall throttle
 ```
 
-After the tap is published, users can install with:
+## CI/CD
 
-```sh
-brew tap odd-theory/tap
-brew install throttle
-```
+The repository has two GitHub Actions workflows:
 
-Future release work should add CI for `swift test` on pull requests and tags,
-then consider Homebrew bottles once the formula is stable.
+- `CI` runs `swift build` and `swift test` on pull requests to `dev` and `main`,
+  and on pushes to `dev` and `main`.
+- `Publish Homebrew formula` runs on pushes to `main` and manual dispatch. It
+  builds and tests the package, creates `v<VERSION>` if needed, computes the
+  GitHub source tarball SHA256, and commits `Formula/throttle.rb` to
+  `odd-theory/homebrew-tap`.
+
+For the initial release, `VERSION` is `0.1.0`, so merging `dev` to `main` will
+publish tag `v0.1.0`.
 
 ## Usage
 
