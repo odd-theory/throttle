@@ -14,6 +14,34 @@ for download and upload shaping.
 - Swift 6
 - Administrator privileges for commands that modify network rules
 
+## Quick Start
+
+Clone the repo, build the debug binary, and list the bundled profiles:
+
+```sh
+git clone https://github.com/odd-theory/throttle.git
+cd throttle
+swift build
+.build/debug/throttle list
+```
+
+Start throttling with a foreground session:
+
+```sh
+sudo .build/debug/throttle apply LTE
+```
+
+`throttle` will stay open and show the active profile. Press `Ctrl-C` to disable
+throttling and return to your shell.
+
+To apply throttling and immediately return to the shell instead:
+
+```sh
+sudo .build/debug/throttle apply LTE --detach
+.build/debug/throttle status
+sudo .build/debug/throttle off
+```
+
 ## Build
 
 ```sh
