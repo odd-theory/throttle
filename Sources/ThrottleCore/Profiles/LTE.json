@@ -1,0 +1,7 @@
+{
+  "download": "50mbit",
+  "latency": "60ms",
+  "name": "LTE",
+  "packetLoss": 0.1,
+  "upload": "10mbit"
+}

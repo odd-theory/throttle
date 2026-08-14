@@ -1,0 +1,7 @@
+{
+  "download": "64kbit",
+  "latency": "800ms",
+  "name": "Very Bad Network",
+  "packetLoss": 5,
+  "upload": "32kbit"
+}

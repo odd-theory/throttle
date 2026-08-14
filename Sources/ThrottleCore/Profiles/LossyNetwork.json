@@ -1,0 +1,7 @@
+{
+  "download": "10mbit",
+  "latency": "150ms",
+  "name": "Lossy Network",
+  "packetLoss": 5,
+  "upload": "2mbit"
+}

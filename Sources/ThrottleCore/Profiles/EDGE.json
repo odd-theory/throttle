@@ -1,0 +1,7 @@
+{
+  "download": "240kbit",
+  "latency": "400ms",
+  "name": "EDGE",
+  "packetLoss": 1,
+  "upload": "100kbit"
+}

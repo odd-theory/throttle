@@ -1,0 +1,7 @@
+{
+  "download": "1.6mbit",
+  "latency": "300ms",
+  "name": "3G",
+  "packetLoss": 0.5,
+  "upload": "768kbit"
+}
