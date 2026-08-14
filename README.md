@@ -182,7 +182,27 @@ The `odd-theory/throttle` repository also needs a GitHub Actions secret named:
 HOMEBREW_TAP_TOKEN
 ```
 
-That token must be able to write to `odd-theory/homebrew-tap`.
+Use a fine-grained GitHub personal access token owned by an account that can
+write to `odd-theory/homebrew-tap`. Limit repository access to only
+`odd-theory/homebrew-tap`, and grant Contents read/write permission.
+
+Create the token from:
+
+```text
+https://github.com/settings/personal-access-tokens/new?name=Throttle%20Homebrew%20Tap%20Publisher&target_name=odd-theory&expires_in=366&contents=write
+```
+
+Use these settings:
+
+- Resource owner: `odd-theory`
+- Repository access: only `homebrew-tap`
+- Repository permissions: `Contents` read/write
+
+Then add it to `odd-theory/throttle`:
+
+```sh
+gh secret set HOMEBREW_TAP_TOKEN --repo odd-theory/throttle
+```
 
 The generated formula is based on:
 
