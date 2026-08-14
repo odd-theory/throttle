@@ -73,30 +73,15 @@ jobs:
 
       - name: Generate Homebrew formula
         env:
-          SOURCE_URL: ${{ steps.source.outputs.url }}
+          TAG: ${{ steps.version.outputs.tag }}
           SOURCE_SHA256: ${{ steps.source.outputs.sha256 }}
         run: |
           mkdir -p generated/Formula
-          cat > generated/Formula/throttle.rb <<RUBY
-          class Throttle < Formula
-            desc "Native macOS CLI for simulating constrained network conditions"
-            homepage "https://github.com/odd-theory/throttle"
-            url "$SOURCE_URL"
-            sha256 "$SOURCE_SHA256"
-            license "MIT"
-
-            depends_on xcode: ["16.0", :build]
-
-            def install
-              system "swift", "build", "-c", "release", "--disable-sandbox"
-              bin.install ".build/release/throttle"
-            end
-
-            test do
-              assert_match "WiFi", shell_output("#{bin}/throttle list")
-            end
-          end
-          RUBY
+          sed \
+            -e "s|VERSION_TAG|$TAG|g" \
+            -e "s|SOURCE_TARBALL_SHA256|$SOURCE_SHA256|g" \
+            packaging/homebrew/Formula/throttle.rb.template > generated/Formula/throttle.rb
+          ruby -c generated/Formula/throttle.rb
 
       - name: Check out Odd Theory Homebrew tap
         uses: actions/checkout@v4
